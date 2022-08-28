@@ -69,6 +69,8 @@ class DockerService
         $zipFilePath = $this->getZipFilePath($zipName, $path);
         $zipCommand = $this->getZipCommand($zipPassword);
 
+        touch($zipFilePath);
+
         $postBody = (new ContainersCreatePostBody())
             ->setHostConfig((new HostConfig())
                 ->setBinds([
@@ -112,11 +114,7 @@ class DockerService
             $zipName
         );
 
-        $zipFilePath = ($path . DIRECTORY_SEPARATOR . $fullZipName);
-
-        touch($zipFilePath);
-
-        return $zipFilePath;
+        return ($path . DIRECTORY_SEPARATOR . $fullZipName);
     }
 
     private function getZipCommand(?string $zipPassword): string
