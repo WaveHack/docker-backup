@@ -69,7 +69,7 @@ class DockerService
         );
     }
 
-    public function createZipFromVolume(string $volumeName, string $path, string $zipName, ?string $zipPassword)
+    public function createZipFromVolume(string $volumeName, string $path, string $zipName, ?string $zipPassword): void
     {
         $zipFilePath = $this->getZipFilePath($zipName, $path);
         $zipCommand = $this->getZipCommand($zipPassword);
@@ -86,8 +86,6 @@ class DockerService
 //            ->setCmd(['sh', '-c', "\"cd /backup/input; {$zipCommand}\""]) // werkt niet
 //            ->setCmd(["sh -c \"cd /backup/input; {$zipCommand}\""]) // werkt niet
                 ->setCmd(['sh -c "echo foo > /backup/output"']) // werkt ook niet reeeeeeeee
-//            ->setAttachStdout(true)
-//            ->setAttachStderr(true)
         ;
 
         $containerName = 'docker-backup';
@@ -101,23 +99,7 @@ class DockerService
             'name' => $containerName,
         ]);
 
-//        $attachStream = $this->docker->containerAttach($response->getId(), [
-////            'stream' => true,
-//            'stdout' => true,
-//            'stderr' => true,
-//        ]);
-
         $this->docker->containerStart($response->getId());
-
-//        $attachStream->onStdout(function ($stdout) {
-//            echo $stdout;
-//        });
-//        $attachStream->onStderr(function ($stderr) {
-//            echo $stderr;
-//        });
-
-//        $attachStream->wait();
-
         $this->docker->containerWait($response->getId());
 
         if (filesize($zipFilePath) === 0) {
@@ -125,17 +107,7 @@ class DockerService
             exit(1);
         }
 
-//        file_put_contents(
-//            $path . DIRECTORY_SEPARATOR . $fullZipName,
-//            file_get_contents($tmpFilePath)
-//        );
-//        unlink($tmpFilePath);
-
         $this->docker->containerDelete($response->getId());
-
-        dd('foo');
-
-        //
     }
 
     private function getZipFilePath(string $zipName, string $path): string
