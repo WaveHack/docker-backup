@@ -71,25 +71,8 @@ class DockerService
 
     public function createZipFromVolume(string $volumeName, string $path, string $zipName, ?string $zipPassword)
     {
-        $fullZipName = sprintf(
-            "%s-%s.zip",
-            now()->format('Ymd-His'),
-            $zipName
-        );
-
-        $zipFilePath = ($path . DIRECTORY_SEPARATOR . $fullZipName);
-
-        $zipCommand = collect([
-            'zip',
-//            '--quiet',
-            '--recurse-paths',
-            ($zipPassword !== null ? "--encrypt --password \"{$zipPassword}\"" : null),
-            '-', // output zip contents to stdout
-            '.', // input
-            '> /backup/output', // pipe stdout to file
-        ])->filter()->implode(' ');
-
-        touch($zipFilePath);
+        $zipFilePath = $this->getZipFilePath($zipName, $path);
+        $zipCommand = $this->getZipCommand($zipPassword);
 
         $postBody = (new ContainersCreatePostBody())
             ->setHostConfig((new HostConfig())
@@ -153,5 +136,33 @@ class DockerService
         dd('foo');
 
         //
+    }
+
+    private function getZipFilePath(string $zipName, string $path): string
+    {
+        $fullZipName = sprintf(
+            "%s-%s.zip",
+            now()->format('Ymd-His'),
+            $zipName
+        );
+
+        $zipFilePath = ($path . DIRECTORY_SEPARATOR . $fullZipName);
+
+        touch($zipFilePath);
+
+        return $zipFilePath;
+    }
+
+    private function getZipCommand(?string $zipPassword): string
+    {
+        return collect([
+            'zip',
+//            '--quiet',
+            '--recurse-paths',
+            ($zipPassword !== null ? "--encrypt --password \"{$zipPassword}\"" : null),
+            '-', // output zip contents to stdout
+            '.', // input
+            '> /backup/output', // pipe stdout to file
+        ])->filter()->implode(' ');
     }
 }
