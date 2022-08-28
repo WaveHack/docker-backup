@@ -4,6 +4,7 @@ namespace App\Commands;
 
 use App\DockerService;
 use App\Exceptions\DockerContainerNotFoundException;
+use App\Exceptions\DockerVolumeNotFoundException;
 use App\RcloneService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
@@ -52,7 +53,7 @@ class BackupCreateCommand extends Command
         $zipPassword = $this->option('zip-password');
 
         if (!$dockerService->volumeExists($volume)) {
-            throw new DockerContainerNotFoundException($volume);
+            throw new DockerVolumeNotFoundException($volume);
         }
 
         $containers->map(function ($container) use ($dockerService) {
