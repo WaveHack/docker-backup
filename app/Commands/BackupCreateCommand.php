@@ -20,7 +20,7 @@ class BackupCreateCommand extends Command
     protected $signature = 'backup:create
                            {volume : Name of the Docker volume to backup}
                            {path? : Directory path where the zip file gets created (default: current directory)}
-                           {--containers= : Comma-separated names of Docker containers to stop and restart afterwards}
+                           {--container= : Docker container to stop and restart afterwards}
                            {--rclone= : Rclone path to upload the zip file to ($remote:$path); deletes local zip file afterwards}
                            {--rclone-config= : Rclone configuration file to use}
                            {--rclone-password= : Rclone configuration file password}
@@ -44,8 +44,7 @@ class BackupCreateCommand extends Command
         $volume = $this->argument('volume');
         $path = $this->argument('path') ?? getcwd();
 
-        // todo: --containers => --container, no need for multiple containers to stop
-        $containers = Str::of($this->option('containers'))->explode(',')->filter();
+        $container = $this->option('container');
         $rclone = $this->option('rclone');
         $rcloneConfig = $this->option('rclone-config');
         $rclonePassword = $this->option('rclone-password');
@@ -56,20 +55,18 @@ class BackupCreateCommand extends Command
             throw new DockerVolumeNotFoundException($volume);
         }
 
-        $containers->map(function ($container) use ($dockerService) {
-            if (!$dockerService->containerExists($container)) {
-                throw new DockerContainerNotFoundException($container);
-            }
-        });
+        if (!$dockerService->containerExists($container)) {
+            throw new DockerContainerNotFoundException($container);
+        }
 
-        $dockerService->stopContainers($containers);
+        $dockerService->stopContainer($container);
 
         $zipFile = $dockerService->createZipFromVolume($volume, $path, $zipName, $zipPassword);
         // nyi from this point onwards
         $rcloneService->upload($zipFile, $path);
         $zipFile->remove();
 
-        $dockerService->startContainers($containers);
+        $dockerService->startContainer($container);
 
         /*
          * docker run \

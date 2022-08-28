@@ -48,13 +48,6 @@ class DockerService
         $this->docker->containerStop($container->getId());
     }
 
-    public function stopContainers(iterable $containerNames): void
-    {
-        foreach ($containerNames as $containerName) {
-            $this->stopContainer($containerName);
-        }
-    }
-
     public function volumeExists(string $volumeName): bool
     {
         try {
