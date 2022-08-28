@@ -76,7 +76,6 @@ class DockerService
 
         $postBody = (new ContainersCreatePostBody())
             ->setHostConfig((new HostConfig())
-//                ->setVolumeDriver('local')
                 ->setBinds([
                     "{$volumeName}:/backup/input:ro",
                     "{$zipFilePath}:/backup/output:rw",
@@ -85,7 +84,7 @@ class DockerService
             ->setImage('joshkeegan/zip:latest')
 //            ->setCmd(['sh', '-c', "\"cd /backup/input; {$zipCommand}\""]) // werkt niet
 //            ->setCmd(["sh -c \"cd /backup/input; {$zipCommand}\""]) // werkt niet
-                ->setCmd(['sh -c "echo foo > /backup/output"']) // werkt ook niet reeeeeeeee
+            ->setCmd(['sh -c "echo foo > /backup/output"']) // werkt ook niet reeeeeeeee
         ;
 
         $containerName = 'docker-backup';
