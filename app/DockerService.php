@@ -3,17 +3,12 @@
 namespace App;
 
 use App\Exceptions\DockerContainerNotFoundException;
-use Docker\API\Exception\ContainerInspectNotFoundException;
 use Docker\API\Exception\VolumeInspectNotFoundException;
-use Docker\API\Model\ContainerConfigExposedPortsItem;
-use Docker\API\Model\ContainerConfigVolumesItem;
 use Docker\API\Model\ContainersCreatePostBody;
 use Docker\API\Model\ContainersCreatePostResponse201;
 use Docker\API\Model\ContainerSummaryItem;
 use Docker\API\Model\HostConfig;
 use Docker\Docker;
-use Docker\Stream\DockerRawStream;
-use Illuminate\Support\Str;
 
 class DockerService
 {
