@@ -8,8 +8,8 @@ use RuntimeException;
 class DockerVolumeNotFoundException extends RuntimeException
 {
     #[Pure]
-    public function __construct(string $volume)
+    public function __construct(string $volumeName)
     {
-        parent::__construct("Docker volume '$volume' not found");
+        parent::__construct("Docker volume '$volumeName' not found");
     }
 }

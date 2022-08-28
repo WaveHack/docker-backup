@@ -8,8 +8,8 @@ use RuntimeException;
 class DockerContainerNotFoundException extends RuntimeException
 {
     #[Pure]
-    public function __construct(string $container)
+    public function __construct(string $containerName)
     {
-        parent::__construct("Docker container '$container' not found");
+        parent::__construct("Docker container '$containerName' not found");
     }
 }

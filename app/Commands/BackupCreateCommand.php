@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Commands;
 
-use App\DockerService;
-use App\Exceptions\DockerContainerNotFoundException;
-use App\Exceptions\DockerVolumeNotFoundException;
-use App\RcloneService;
+use App\Domain\Archive\ArchiveFormat;
+use App\Domain\Docker\DockerVolumeArchiver;
+use App\Domain\Rclone\RcloneArchiveUploader;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 use function Termwind\render;
@@ -18,75 +19,50 @@ class BackupCreateCommand extends Command
      * @var string
      */
     protected $signature = 'backup:create
-                           {volume : Name of the Docker volume to backup}
-                           {path? : Directory path where the zip file gets created (default: current directory)}
+                           {volume : Name of the Docker volume to archive}
+                           {path? : Directory path where the archive file gets created (default: current directory)}
+                           {--archive-format=zip : Archive format. Supported formats: zip}
+                           {--archive-name= : Name for the archive file without extension (default: volume name)}
+                           {--archive-password= : Password for the archive file}
                            {--container= : Docker container to stop and restart afterwards}
-                           {--rclone= : Rclone path to upload the zip file to ($remote:$path); deletes local zip file afterwards}
+                           {--rclone-path= : Rclone path to upload the archive file to ($remote:$path) and delete local archive file afterwards}
                            {--rclone-config= : Rclone configuration file to use}
-                           {--rclone-password= : Rclone configuration file password}
-                           {--zip-name= : Name for the zip file (default: volume name)}
-                           {--zip-password= : Password for the backup zip file}';
+                           {--rclone-password= : Rclone configuration file password}';
 
     /**
      * The description of the command.
      *
      * @var string
      */
-    protected $description = 'Create a backup of a Docker volume';
+    protected $description = 'Create an archive file of a Docker volume and optionally upload using Rclone';
 
     /**
      * Execute the console command.
-     *
-     * @return mixed
      */
-    public function handle(DockerService $dockerService, RcloneService $rcloneService)
+    public function handle(DockerVolumeArchiver $archiver, RcloneArchiveUploader $uploader): void
     {
-        $volume = $this->argument('volume');
-        $path = $this->argument('path') ?? getcwd();
+        $archiveFile = $archiver
+            ->setDockerContainer($this->option('container'))
+            ->setDockerVolume($this->argument('volume'))
+            ->setArchiveFormat(ArchiveFormat::from(Str::lower($this->option('archive-format'))))
+            ->setArchiveName($this->option('archive-name') ?? $this->argument('volume'))
+            ->setArchivePassword($this->option('archive-password'))
+            ->setArchiveOutputPath($this->argument('path') ?? getcwd())
+            ->create();
 
-        $container = $this->option('container');
-        $rclone = $this->option('rclone');
-        $rcloneConfig = $this->option('rclone-config');
-        $rclonePassword = $this->option('rclone-password');
-        $zipName = $this->option('zip-name') ?? $volume;
-        $zipPassword = $this->option('zip-password');
+        if ($this->hasOption('rclone-path')) {
+            $uploader
+                ->setArchiveFile($archiveFile)
+                ->setRclonePath($this->option('rclone-path'))
+                ->setRcloneConfig($this->option('rclone-config'))
+                ->setRclonePassword($this->option('rclone-password'))
+                ->upload();
 
-        if (!$dockerService->volumeExists($volume)) {
-            throw new DockerVolumeNotFoundException($volume);
+            $archiveFile->delete();
         }
-
-        if (!$dockerService->containerExists($container)) {
-            throw new DockerContainerNotFoundException($container);
-        }
-
-        $dockerService->stopContainer($container);
-
-        $zipFile = $dockerService->createZipFromVolume($volume, $path, $zipName, $zipPassword);
-        // nyi from this point onwards
-        $rcloneService->upload($zipFile, $path);
-        $zipFile->remove();
-
-        $dockerService->startContainer($container);
-
-        /*
-         * docker run \
-  --rm \
-  --volume=$VOLUME:/backup/input:ro \
-  --volume=$BASEPATH/tmp:/backup/output:rw \
-  joshkeegan/zip:latest \
-    sh -c "cd /backup/input; zip --encrypt --quiet --recurse-paths --password $BACKUP_ZIP_PASSWORD "/backup/output/$ZIP_FILE" ."
-         */
-
-        /*
-         * rclone --config $BASEPATH/rclone/rclone.conf \
-  --ask-password=false \
-  copy $BASEPATH/tmp/$FILE \
-  $RCLONE_REMOTE_NAME:/Backups/Intranet/$CONTAINER
-         */
-
 
         render(<<<'HTML'
-            <div class="py-1 ml-2 bg-blue-400 text-black">foo</div>
+            <div class="py-1 ml-2 bg-blue-400 text-black">test</div>
         HTML
         );
     }
